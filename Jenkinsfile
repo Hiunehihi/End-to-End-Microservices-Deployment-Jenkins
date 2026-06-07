@@ -8,7 +8,7 @@ pipeline {
 
   parameters {
     string(name: 'DOCKER_NAMESPACE', defaultValue: 'hiunehihi', description: 'Docker Hub namespace used for all service images.')
-    string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub', description: 'Jenkins credential ID for Docker Hub username/password.')
+    string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub-credentials', description: 'Jenkins credential ID for Docker Hub username/password.')
     booleanParam(name: 'DEPLOY_ENABLED', defaultValue: true, description: 'Deploy only for dev and main branch builds.')
     booleanParam(name: 'TRIVY_FAIL_ON_FINDINGS', defaultValue: false, description: 'Fail the pipeline when Trivy finds vulnerabilities with the configured severity.')
     string(name: 'STAGING_API_BASE_URL', defaultValue: 'http://localhost:31085', description: 'React API base URL for local k3d staging images.')
