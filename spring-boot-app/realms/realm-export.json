@@ -1,0 +1,133 @@
+{
+    "realm": "spring-boot-ms-realm",
+    "enabled": true,
+    "sslRequired": "external",
+    "registrationAllowed": true,
+    "registrationEmailAsUsername": false,
+    "rememberMe": true,
+    "verifyEmail": false,
+    "loginWithEmailAllowed": true,
+    "duplicateEmailsAllowed": false,
+    "resetPasswordAllowed": true,
+    "editUsernameAllowed": true,
+    "accessTokenLifespan": 1800,
+    "ssoSessionIdleTimeout": 1800,
+    "ssoSessionMaxLifespan": 36000,
+    "defaultRoles": [
+        "USER",
+        "offline_access",
+        "uma_authorization"
+    ],
+    "roles": {
+        "realm": [
+            {
+                "name": "ADMIN",
+                "description": "Administrator with full access",
+                "composite": false,
+                "clientRole": false
+            },
+            {
+                "name": "USER",
+                "description": "Standard customer",
+                "composite": false,
+                "clientRole": false
+            }
+        ]
+    },
+    "clients": [
+        {
+            "clientId": "spring-cloud-client",
+            "enabled": true,
+            "publicClient": true,
+            "directAccessGrantsEnabled": true,
+            "standardFlowEnabled": true,
+            "implicitFlowEnabled": false,
+            "serviceAccountsEnabled": false,
+            "redirectUris": [
+                "http://localhost:3000/*",
+                "http://localhost:8085/*"
+            ],
+            "webOrigins": [
+                "+"
+            ],
+            "protocol": "openid-connect",
+            "fullScopeAllowed": true,
+            "attributes": {
+                "post.logout.redirect.uris": "+"
+            }
+        },
+        {
+            "clientId": "spring-boot-microservices",
+            "enabled": true,
+            "bearerOnly": true,
+            "publicClient": false,
+            "protocol": "openid-connect",
+            "fullScopeAllowed": true
+        },
+        {
+            "clientId": "registration-svc",
+            "enabled": true,
+            "secret": "registration-svc-secret",
+            "publicClient": false,
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "implicitFlowEnabled": false,
+            "directAccessGrantsEnabled": false,
+            "protocol": "openid-connect",
+            "clientAuthenticatorType": "client-secret"
+        }
+    ],
+    "users": [
+        {
+            "username": "admin",
+            "enabled": true,
+            "email": "admin@example.com",
+            "firstName": "Admin",
+            "lastName": "User",
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "admin23",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "ADMIN",
+                "USER"
+            ]
+        },
+        {
+            "username": "customer",
+            "enabled": true,
+            "email": "customer@example.com",
+            "firstName": "Customer",
+            "lastName": "Demo",
+            "emailVerified": true,
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "customer23",
+                    "temporary": false
+                }
+            ],
+            "realmRoles": [
+                "USER"
+            ]
+        },
+        {
+            "username": "service-account-registration-svc",
+            "enabled": true,
+            "serviceAccountClientId": "registration-svc",
+            "clientRoles": {
+                "realm-management": [
+                    "manage-users",
+                    "view-users",
+                    "query-users",
+                    "view-realm",
+                    "view-clients"
+                ]
+            }
+        }
+    ]
+}

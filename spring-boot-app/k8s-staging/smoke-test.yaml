@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: staging-smoke-test
+  namespace: spring-microservices-staging
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 180
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: staging-smoke-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke-test
+          image: curlimages/curl:8.12.1
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              probe_ok() {
+                name="$1"
+                url="$2"
+                attempts=0
+                while [ "$attempts" -lt 12 ]; do
+                  code="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' "$url" || true)"
+                  if [ "$code" = "200" ]; then
+                    echo "$name is healthy"
+                    return 0
+                  fi
+                  attempts=$((attempts + 1))
+                  echo "$name returned HTTP $code; retry $attempts/12"
+                  sleep 5
+                done
+                echo "$name did not become healthy"
+                return 1
+              }
+
+              probe_ok "frontend" "http://frontend/"
+              probe_ok "product catalog through gateway" "http://api-gateway:8085/api/product"
+
+              protected_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+                "http://api-gateway:8085/api/cart" || true)"
+              case "$protected_status" in
+                401|403)
+                  echo "protected cart route correctly rejected anonymous access"
+                  ;;
+                *)
+                  echo "protected cart route returned unexpected HTTP $protected_status"
+                  exit 1
+                  ;;
+              esac

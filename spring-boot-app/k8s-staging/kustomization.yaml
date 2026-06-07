@@ -1,0 +1,40 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - databases.yaml
+  - kafka-zipkin.yaml
+  - keycloak.yaml
+  - canary-rollouts.yaml
+  - ecommerce-expansion.yaml
+  - services.yaml
+  - frontend.yaml
+  - smoke-test.yaml
+  - hpa.yaml
+  - ingress/ingress.yaml
+  - ingress/cert-issuer.yaml
+  - monitoring/namespace.yaml
+  - monitoring/prometheus-deployment.yaml
+  - monitoring/prometheus-config.yaml
+  - monitoring/grafana.yaml
+images:
+  - name: kaingyn615/product-service
+    newTag: dev
+  - name: kaingyn615/cart-service
+    newTag: dev
+  - name: kaingyn615/payment-service
+    newTag: dev
+  - name: kaingyn615/discovery-server
+    newTag: dev
+  - name: kaingyn615/api-gateway
+    newTag: dev
+  - name: kaingyn615/order-service
+    newTag: dev
+  - name: kaingyn615/inventory-service
+    newTag: dev
+  - name: kaingyn615/notification-service
+    newTag: dev
+  - name: kaingyn615/admin-server
+    newTag: dev
+  - name: kaingyn615/frontend
+    newTag: dev

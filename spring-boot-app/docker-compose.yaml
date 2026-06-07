@@ -1,0 +1,277 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: broker
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  mongo:
+    image: mongo:7.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: S3cret
+
+  postgres-order:
+    image: postgres:16
+    container_name: postgres-order
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: order-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+
+  postgres-inventory:
+    image: postgres:16
+    container_name: postgres-inventory
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_inventory_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: inventory-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - keycloak_postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:legacy
+    container_name: keycloak
+    depends_on:
+      - postgres
+    ports:
+      - "8181:8080"
+    volumes:
+      - ./realms:/tmp/realms:ro
+    environment:
+      DB_VENDOR: POSTGRES
+      PROXY_ADDRESS_FORWARDING: "true"
+      DB_ADDR: postgres
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_SCHEMA: public
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: password
+      KEYCLOAK_IMPORT: /tmp/realms/realm-export.json
+
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  discovery-server:
+    build:
+      context: .
+      dockerfile: discovery-server/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/discovery-server:${IMAGE_TAG:-dev-local}
+    container_name: discovery-server
+    depends_on:
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8761:8761"
+
+  product-service:
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/product-service:${IMAGE_TAG:-dev-local}
+    container_name: product-service
+    depends_on:
+      - mongo
+      - discovery-server
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://root:S3cret@mongo:27017/product-service?authSource=admin
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8081:8080"
+
+  cart-service:
+    build:
+      context: .
+      dockerfile: cart-service/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/cart-service:${IMAGE_TAG:-dev-local}
+    container_name: cart-service
+    depends_on:
+      - mongo
+      - discovery-server
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://root:S3cret@mongo:27017/cart-service?authSource=admin
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8084:8080"
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/inventory-service:${IMAGE_TAG:-dev-local}
+    container_name: inventory-service
+    depends_on:
+      - postgres-inventory
+      - broker
+      - discovery-server
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5432/inventory-service
+      SPRING_DATASOURCE_USERNAME: ptechie
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8083:8080"
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/order-service:${IMAGE_TAG:-dev-local}
+    container_name: order-service
+    depends_on:
+      - postgres-order
+      - broker
+      - inventory-service
+      - discovery-server
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/order-service
+      SPRING_DATASOURCE_USERNAME: ptechie
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8082:8080"
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/payment-service:${IMAGE_TAG:-dev-local}
+    container_name: payment-service
+    depends_on:
+      - broker
+      - order-service
+      - discovery-server
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      VNPAY_TMN_CODE: DEMOVNPAY
+      VNPAY_HASH_SECRET: demo-vnpay-secret-local-only
+    ports:
+      - "8086:8080"
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/notification-service:${IMAGE_TAG:-dev-local}
+    container_name: notification-service
+    depends_on:
+      - broker
+      - discovery-server
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8087:8080"
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    image: ${DOCKER_USERNAME:-local}/api-gateway:${IMAGE_TAG:-dev-local}
+    container_name: api-gateway
+    depends_on:
+      - discovery-server
+      - cart-service
+      - product-service
+      - order-service
+      - inventory-service
+      - payment-service
+      - keycloak
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      APP_EUREKA_SERVER: discovery-server
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:password@discovery-server:8761/eureka/
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/spring-boot-ms-realm
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+    ports:
+      - "8085:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: http://localhost:8085
+    image: ${DOCKER_USERNAME:-local}/frontend:${IMAGE_TAG:-dev-local}
+    container_name: frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "3000:80"
+
+volumes:
+  mongo_data:
+  postgres_order_data:
+  postgres_inventory_data:
+  keycloak_postgres_data:

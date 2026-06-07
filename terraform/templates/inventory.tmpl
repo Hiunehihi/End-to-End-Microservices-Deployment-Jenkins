@@ -1,0 +1,35 @@
+all:
+  children:
+    kube_control_plane:
+      hosts:
+        %{ for i, ip in master_ips ~}
+        k3s-master-${i+1}:
+          ansible_host: ${ip}
+          ansible_user: ubuntu
+          %{ if length(master_private_ips) > i }
+          internal_address: ${master_private_ips[i]}
+          %{ endif ~}
+        %{ endfor ~}
+
+    kube_node:
+      hosts:
+        %{ for i, ip in worker_ips ~}
+        k3s-worker-${i+1}:
+          ansible_host: ${ip}
+          ansible_user: ubuntu
+          %{ if length(worker_private_ips) > i }
+          internal_address: ${worker_private_ips[i]}
+          %{ endif ~}
+        %{ endfor ~}
+
+    etcd:
+      hosts:
+        %{ for i, ip in master_ips ~}
+        k3s-master-${i+1}:
+          ansible_host: ${ip}
+        %{ endfor ~}
+
+    k8s_cluster:
+      children:
+        kube_control_plane: {}
+        kube_node: {}

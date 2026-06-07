@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring-staging
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'microservices-staging'
+        environment: 'staging'
+    
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - alertmanager-staging.monitoring-staging.svc.cluster.local:9093
+    
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: '([^:]+):(?:\d+);(\d+)'
+            replacement: '$1:$2'
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+      
+      - job_name: 'staging-services'
+        kubernetes_sd_configs:
+          - role: service
+            namespaces:
+              names:
+                - spring-microservices-staging
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__]
+            action: replace
+            regex: '([^:]+):(\d+)'
+            replacement: '$1:8080'
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+      
+      - job_name: 'staging-api-gateway'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['api-gateway.spring-microservices-staging.svc.cluster.local:8080']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: service
+      
+      - job_name: 'staging-product-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['product-service.spring-microservices-staging.svc.cluster.local:8080']
+      
+      - job_name: 'staging-order-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['order-service.spring-microservices-staging.svc.cluster.local:8080']
+      
+      - job_name: 'staging-payment-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['payment-service.spring-microservices-staging.svc.cluster.local:8080']
+      
+      - job_name: 'staging-inventory-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['inventory-service.spring-microservices-staging.svc.cluster.local:8080']
+      
+      - job_name: 'staging-cart-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['cart-service.spring-microservices-staging.svc.cluster.local:8080']

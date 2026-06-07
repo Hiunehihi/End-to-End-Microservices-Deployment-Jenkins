@@ -1,0 +1,112 @@
+# ==========================================
+# 1. TERRAFORM
+# ==========================================
+# Bỏ qua thư mục làm việc cục bộ của Terraform (rất nặng)
+**/.terraform/*
+
+# Bỏ qua các file trạng thái (Chứa thông tin hạ tầng thật và dữ liệu nhạy cảm)
+*.tfstate
+*.tfstate.*
+
+# Bỏ qua thư mục tải về của Terraform
+.terraform/
+
+# Bỏ qua toàn bộ source code của Kubespray
+kubespray/
+
+# Bỏ qua file crash log
+crash.log
+crash.*.log
+
+# Bỏ qua các file biến môi trường chứa secret/password
+*.tfvars
+*.tfvars.json
+spring-boot-app/k8s/secrets.yaml
+spring-boot-app/k8s-staging/secrets.yaml
+argocd/notifications-secret.yaml
+argocd/git-creds-secret.yaml
+
+# kubeconfig fetched from cluster — chứa client cert/key
+terraform/kubeconfig
+kubeconfig
+
+# Bỏ qua file ghi đè cấu hình cục bộ
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Bỏ qua file kết quả của lệnh terraform plan
+*tfplan*
+
+# ==========================================
+# 2. KUBESPRAY, ANSIBLE & PYTHON
+# ==========================================
+# Bỏ qua file retry của Ansible khi chạy lỗi
+*.retry
+
+# Bỏ qua môi trường ảo Python (Rất nặng, chứa hàng ngàn file nhỏ)
+venv/
+env/
+__pycache__/
+*.pyc
+
+# ==========================================
+# 3. SECURITY & KEYS (CỰC KỲ QUAN TRỌNG)
+# ==========================================
+# Tuyệt đối không push các file khóa SSH lên GitHub (Ví dụ: trinhkeypair-ap.pem)
+*.pem
+*.rsa
+*.pub
+*.key
+
+# ==========================================
+# 4. HỆ ĐIỀU HÀNH & IDE
+# ==========================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# ==========================================
+# 5. JAVA & MAVEN (Spring Boot)
+# ==========================================
+**/target/
+**/*.jar
+**/*.war
+**/*.ear
+.mvn/wrapper/maven-wrapper.jar
+.classpath
+.project
+.settings/
+*.class
+
+# ==========================================
+# 6. NODE.JS & REACT (Frontend)
+# ==========================================
+**/node_modules/
+**/build/
+**/dist/
+.npm
+.eslintcache
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/argocd-image-updater-0.16.0/
+BAO-CAO.docx
+BAO-CAO.md
+SLIDE.docx
+SLIDE.md
+argocd-image-updater-0.16.0.zip
+terraform/k3s-key.pem:Zone.Identifier
+NT548 - Luồng xử lý.drawio
+NT548 - Luồng xử lý.drawio:Zone.Identifier
+NT548 - Luồng xử lý.drawio.bak
+NT548 - Luồng xử lý.drawio.bak:Zone.Identifier
+design/
+tmp/

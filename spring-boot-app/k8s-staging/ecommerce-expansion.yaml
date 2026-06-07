@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cart-service
+  namespace: spring-microservices-staging
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: cart-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cart-service
+  namespace: spring-microservices-staging
+spec:
+  selector:
+    matchLabels:
+      app: cart-service
+  template:
+    metadata:
+      labels:
+        app: cart-service
+    spec:
+      containers:
+        - name: cart-service
+          image: kaingyn615/cart-service:dev
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: eureka-default-zone
+            - name: EUREKA_INSTANCE_HOSTNAME
+              value: cart-service
+            - name: SPRING_DATA_MONGODB_URI
+              value: mongodb://mongo:27017/cart-service
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: spring-microservices-staging
+spec:
+  ports:
+    - port: 8080
+  selector:
+    app: payment-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+  namespace: spring-microservices-staging
+spec:
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+        - name: payment-service
+          image: kaingyn615/payment-service:dev
+          imagePullPolicy: Always
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: eureka-default-zone
+            - name: EUREKA_INSTANCE_HOSTNAME
+              value: payment-service
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: broker:9092
+            - name: VNPAY_TMN_CODE
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: vnpay-tmn-code
+            - name: VNPAY_HASH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: vnpay-hash-secret
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
