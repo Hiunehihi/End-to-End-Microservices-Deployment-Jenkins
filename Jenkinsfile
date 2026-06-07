@@ -80,9 +80,8 @@ pipeline {
         dir("${env.APP_DIR}") {
           sh '''
             set -eu
-            mvn -B clean verify
             for service in $JAVA_SERVICES; do
-              mvn -B -pl "$service" spring-boot:repackage
+              mvn -B -pl "$service" clean verify org.springframework.boot:spring-boot-maven-plugin:3.3.1:repackage
             done
           '''
         }
