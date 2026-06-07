@@ -15,6 +15,12 @@ pipeline {
 
   environment {
     APP_DIR = 'spring-boot-app'
+    HOME = "${WORKSPACE}/.home"
+    DOCKER_CONFIG = "${WORKSPACE}/.docker"
+    MAVEN_OPTS = "-Dmaven.repo.local=${WORKSPACE}/.m2/repository"
+    NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+    SONAR_USER_HOME = "${WORKSPACE}/.sonar"
+    XDG_CACHE_HOME = "${WORKSPACE}/.cache"
     SONARQUBE_SERVER = 'sonarqube'
     SONAR_SCANNER_TOOL = 'sonar-scanner'
     TRIVY_SEVERITY = 'CRITICAL,HIGH'
@@ -25,6 +31,7 @@ pipeline {
   stages {
     stage('Init') {
       steps {
+        sh 'mkdir -p "$HOME" "$DOCKER_CONFIG" "$WORKSPACE/.m2/repository" "$NPM_CONFIG_CACHE" "$SONAR_USER_HOME" "$XDG_CACHE_HOME"'
         script {
           env.SHORT_SHA = sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()
           env.ACTUAL_BRANCH = env.CHANGE_BRANCH ?: env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
@@ -85,9 +92,10 @@ pipeline {
         dir("${env.APP_DIR}") {
           withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
             sh '''
-              mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+              mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
                 -Dsonar.projectKey=spring-boot-app-backend \
-                -Dsonar.projectName=spring-boot-app-backend
+                -Dsonar.projectName=spring-boot-app-backend \
+                -Dsonar.userHome="$SONAR_USER_HOME"
             '''
           }
         }
@@ -186,6 +194,7 @@ pipeline {
         withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
           sh '''
             set -eu
+            mkdir -p "$DOCKER_CONFIG"
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             for service in $ALL_SERVICES; do
               docker push "$DOCKER_NAMESPACE/$service:$IMAGE_TAG"
