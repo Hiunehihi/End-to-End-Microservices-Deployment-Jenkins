@@ -12,29 +12,38 @@ resources:
   - smoke-test.yaml
   - hpa.yaml
   - ingress/ingress.yaml
-  - ingress/cert-issuer.yaml
   - monitoring/namespace.yaml
   - monitoring/prometheus-deployment.yaml
   - monitoring/prometheus-config.yaml
   - monitoring/grafana.yaml
 images:
   - name: kaingyn615/product-service
+    newName: hiunehihi/product-service
     newTag: dev
   - name: kaingyn615/cart-service
+    newName: hiunehihi/cart-service
     newTag: dev
   - name: kaingyn615/payment-service
+    newName: hiunehihi/payment-service
     newTag: dev
   - name: kaingyn615/discovery-server
+    newName: hiunehihi/discovery-server
     newTag: dev
   - name: kaingyn615/api-gateway
+    newName: hiunehihi/api-gateway
     newTag: dev
   - name: kaingyn615/order-service
+    newName: hiunehihi/order-service
     newTag: dev
   - name: kaingyn615/inventory-service
+    newName: hiunehihi/inventory-service
     newTag: dev
   - name: kaingyn615/notification-service
+    newName: hiunehihi/notification-service
     newTag: dev
   - name: kaingyn615/admin-server
+    newName: hiunehihi/admin-server
     newTag: dev
   - name: kaingyn615/frontend
+    newName: hiunehihi/frontend
     newTag: dev

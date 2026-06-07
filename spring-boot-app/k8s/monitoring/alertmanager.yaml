@@ -98,6 +98,13 @@ spec:
             limits:
               cpu: 200m
               memory: 256Mi
+          env:
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-slack-secret
+                  key: slack-webhook-url
+                  optional: true
           volumeMounts:
             - name: config
               mountPath: /etc/alertmanager
@@ -121,13 +128,6 @@ spec:
             name: alertmanager-config
         - name: storage
           emptyDir: {}
-      env:
-        - name: SLACK_WEBHOOK_URL
-          valueFrom:
-            secretKeyRef:
-              name: alertmanager-slack-secret
-              key: slack-webhook-url
-              optional: true
 ---
 apiVersion: v1
 kind: Service
