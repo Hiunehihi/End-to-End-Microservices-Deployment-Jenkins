@@ -168,7 +168,6 @@ pipeline {
             done
 
             docker build \
-              --build-arg REACT_APP_API_BASE_URL="$REACT_APP_API_BASE_URL" \
               -t "$DOCKER_NAMESPACE/frontend:$IMAGE_TAG" \
               -t "$DOCKER_NAMESPACE/frontend:$BRANCH_TAG" \
               frontend
