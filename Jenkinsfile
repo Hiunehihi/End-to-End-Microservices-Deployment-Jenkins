@@ -78,7 +78,13 @@ pipeline {
     stage('Backend Test') {
       steps {
         dir("${env.APP_DIR}") {
-          sh 'mvn -B clean verify'
+          sh '''
+            set -eu
+            mvn -B clean verify
+            for service in $JAVA_SERVICES; do
+              mvn -B -pl "$service" spring-boot:repackage
+            done
+          '''
         }
       }
       post {
