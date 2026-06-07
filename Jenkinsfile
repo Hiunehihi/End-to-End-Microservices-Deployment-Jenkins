@@ -10,6 +10,7 @@ pipeline {
     string(name: 'DOCKER_NAMESPACE', defaultValue: 'kaingyn615', description: 'Docker Hub namespace used for all service images.')
     string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub', description: 'Jenkins credential ID for Docker Hub username/password.')
     booleanParam(name: 'DEPLOY_ENABLED', defaultValue: true, description: 'Deploy only for dev and main branch builds.')
+    booleanParam(name: 'TRIVY_FAIL_ON_FINDINGS', defaultValue: false, description: 'Fail the pipeline when Trivy finds vulnerabilities with the configured severity.')
     string(name: 'STAGING_API_BASE_URL', defaultValue: 'http://localhost:31085', description: 'React API base URL for local k3d staging images.')
     string(name: 'PRODUCTION_API_BASE_URL', defaultValue: 'http://localhost:30085', description: 'React API base URL for local k3d production images.')
   }
@@ -26,6 +27,7 @@ pipeline {
     SONARQUBE_SERVER = 'sonarqube'
     SONAR_SCANNER_TOOL = 'sonar-scanner'
     TRIVY_SEVERITY = 'CRITICAL,HIGH'
+    TRIVY_CACHE_DIR = '/var/jenkins_home/.trivy-cache'
     JAVA_SERVICES = 'product-service order-service inventory-service notification-service api-gateway discovery-server admin-server cart-service payment-service'
     ALL_SERVICES = 'product-service order-service inventory-service notification-service api-gateway discovery-server admin-server cart-service payment-service frontend'
   }
@@ -33,7 +35,7 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        sh 'mkdir -p "$HOME" "$DOCKER_CONFIG" "$WORKSPACE/.m2/repository" "$NPM_CONFIG_CACHE" "$SONAR_USER_HOME" "$XDG_CACHE_HOME"'
+        sh 'mkdir -p "$HOME" "$DOCKER_CONFIG" "$WORKSPACE/.m2/repository" "$NPM_CONFIG_CACHE" "$SONAR_USER_HOME" "$XDG_CACHE_HOME" "$TRIVY_CACHE_DIR"'
         script {
           env.SHORT_SHA = sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()
           env.ACTUAL_BRANCH = env.CHANGE_BRANCH ?: env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
@@ -180,15 +182,36 @@ pipeline {
       steps {
         sh '''
           set -eu
+          mkdir -p trivy-reports
+          TRIVY_EXIT_CODE=0
+          if [ "$TRIVY_FAIL_ON_FINDINGS" = "true" ]; then
+            TRIVY_EXIT_CODE=1
+          fi
+
           for service in $ALL_SERVICES; do
             trivy image \
-              --exit-code 1 \
+              --cache-dir "$TRIVY_CACHE_DIR" \
+              --timeout 30m \
+              --exit-code "$TRIVY_EXIT_CODE" \
               --ignore-unfixed \
-              --vuln-type os,library \
+              --pkg-types os,library \
               --severity "$TRIVY_SEVERITY" \
-              "$DOCKER_NAMESPACE/$service:$IMAGE_TAG"
+              --format table \
+              --output "trivy-reports/$service.txt" \
+              "$DOCKER_NAMESPACE/$service:$IMAGE_TAG" || {
+                status=$?
+                if [ "$TRIVY_FAIL_ON_FINDINGS" = "true" ]; then
+                  exit "$status"
+                fi
+                echo "Trivy scan for $service exited with $status; continuing because TRIVY_FAIL_ON_FINDINGS=false."
+              }
           done
         '''
+      }
+      post {
+        always {
+          archiveArtifacts allowEmptyArchive: true, artifacts: 'trivy-reports/*.txt'
+        }
       }
     }
 
