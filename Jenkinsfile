@@ -19,6 +19,7 @@ pipeline {
     DOCKER_CONFIG = "${WORKSPACE}/.docker"
     MAVEN_OPTS = "-Dmaven.repo.local=${WORKSPACE}/.m2/repository"
     NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
+    SONAR_USER_HOME = "${WORKSPACE}/.sonar"
     XDG_CACHE_HOME = "${WORKSPACE}/.cache"
     SONARQUBE_SERVER = 'sonarqube'
     SONAR_SCANNER_TOOL = 'sonar-scanner'
@@ -30,7 +31,7 @@ pipeline {
   stages {
     stage('Init') {
       steps {
-        sh 'mkdir -p "$HOME" "$DOCKER_CONFIG" "$WORKSPACE/.m2/repository" "$NPM_CONFIG_CACHE" "$XDG_CACHE_HOME"'
+        sh 'mkdir -p "$HOME" "$DOCKER_CONFIG" "$WORKSPACE/.m2/repository" "$NPM_CONFIG_CACHE" "$SONAR_USER_HOME" "$XDG_CACHE_HOME"'
         script {
           env.SHORT_SHA = sh(script: 'git rev-parse --short=12 HEAD', returnStdout: true).trim()
           env.ACTUAL_BRANCH = env.CHANGE_BRANCH ?: env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
@@ -91,9 +92,10 @@ pipeline {
         dir("${env.APP_DIR}") {
           withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
             sh '''
-              mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+              mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
                 -Dsonar.projectKey=spring-boot-app-backend \
-                -Dsonar.projectName=spring-boot-app-backend
+                -Dsonar.projectName=spring-boot-app-backend \
+                -Dsonar.userHome="$SONAR_USER_HOME"
             '''
           }
         }
