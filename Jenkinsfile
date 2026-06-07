@@ -80,9 +80,8 @@ pipeline {
         dir("${env.APP_DIR}") {
           sh '''
             set -eu
-            mvn -B clean verify
             for service in $JAVA_SERVICES; do
-              mvn -B -pl "$service" spring-boot:repackage
+              mvn -B -pl "$service" clean verify org.springframework.boot:spring-boot-maven-plugin:3.3.1:repackage
             done
           '''
         }
@@ -169,7 +168,6 @@ pipeline {
             done
 
             docker build \
-              --build-arg REACT_APP_API_BASE_URL="$REACT_APP_API_BASE_URL" \
               -t "$DOCKER_NAMESPACE/frontend:$IMAGE_TAG" \
               -t "$DOCKER_NAMESPACE/frontend:$BRANCH_TAG" \
               frontend
