@@ -8,14 +8,16 @@ pipeline {
 
   parameters {
     string(name: 'DOCKER_NAMESPACE', defaultValue: 'kaingyn615', description: 'Docker Hub namespace used for all service images.')
+    string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub', description: 'Jenkins credential ID for Docker Hub username/password.')
     booleanParam(name: 'DEPLOY_ENABLED', defaultValue: true, description: 'Deploy only for dev and main branch builds.')
-    string(name: 'STAGING_API_BASE_URL', defaultValue: 'http://k3s-free-alb-59400309.ap-southeast-1.elb.amazonaws.com', description: 'React API base URL for staging images.')
-    string(name: 'PRODUCTION_API_BASE_URL', defaultValue: 'http://k3s-free-alb-59400309.ap-southeast-1.elb.amazonaws.com', description: 'React API base URL for production images.')
+    string(name: 'STAGING_API_BASE_URL', defaultValue: 'http://localhost:31085', description: 'React API base URL for local k3d staging images.')
+    string(name: 'PRODUCTION_API_BASE_URL', defaultValue: 'http://localhost:30085', description: 'React API base URL for local k3d production images.')
   }
 
   environment {
     APP_DIR = 'spring-boot-app'
     HOME = "${WORKSPACE}/.home"
+    DOCKER_HOST = 'tcp://localhost:2375'
     DOCKER_CONFIG = "${WORKSPACE}/.docker"
     MAVEN_OPTS = "-Dmaven.repo.local=${WORKSPACE}/.m2/repository"
     NPM_CONFIG_CACHE = "${WORKSPACE}/.npm"
@@ -191,7 +193,7 @@ pipeline {
         expression { return env.IS_PR != 'true' && (env.ACTUAL_BRANCH == 'dev' || env.ACTUAL_BRANCH == 'main') }
       }
       steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+        withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
           sh '''
             set -eu
             mkdir -p "$DOCKER_CONFIG"
