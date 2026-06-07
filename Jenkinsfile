@@ -183,6 +183,7 @@ pipeline {
         sh '''
           set -eu
           mkdir -p trivy-reports
+          TRIVY_FAIL_ON_FINDINGS="${TRIVY_FAIL_ON_FINDINGS:-false}"
           TRIVY_EXIT_CODE=0
           if [ "$TRIVY_FAIL_ON_FINDINGS" = "true" ]; then
             TRIVY_EXIT_CODE=1
