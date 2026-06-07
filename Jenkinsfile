@@ -7,7 +7,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'DOCKER_NAMESPACE', defaultValue: 'kaingyn615', description: 'Docker Hub namespace used for all service images.')
+    string(name: 'DOCKER_NAMESPACE', defaultValue: 'hiunehihi', description: 'Docker Hub namespace used for all service images.')
     string(name: 'DOCKER_CREDENTIALS_ID', defaultValue: 'dockerhub', description: 'Jenkins credential ID for Docker Hub username/password.')
     booleanParam(name: 'DEPLOY_ENABLED', defaultValue: true, description: 'Deploy only for dev and main branch builds.')
     booleanParam(name: 'TRIVY_FAIL_ON_FINDINGS', defaultValue: false, description: 'Fail the pipeline when Trivy finds vulnerabilities with the configured severity.')
