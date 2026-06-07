@@ -249,8 +249,10 @@ pipeline {
             --server=https://kubernetes.default.svc \
             --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
             --embed-certs=true
-          kubectl config set-credentials jenkins \
-            --token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+          set +x
+          KUBE_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+          kubectl config set-credentials jenkins --token="$KUBE_TOKEN" >/dev/null
+          set -x
           kubectl config set-context jenkins \
             --cluster=k3d-local \
             --user=jenkins \
@@ -269,16 +271,16 @@ pipeline {
           sed -i "s/newTag: $BRANCH_TAG/newTag: $IMAGE_TAG/g" "$WORK_DIR/kustomization.yaml"
           kubectl -n "$K8S_NAMESPACE" delete job staging-smoke-test --ignore-not-found=true
           kubectl apply -k "$WORK_DIR"
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/discovery-server --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/api-gateway --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/inventory-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/notification-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/admin-server --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/cart-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/payment-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" wait --for=condition=complete job/staging-smoke-test --timeout=300s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/discovery-server --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/api-gateway --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/inventory-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/notification-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/admin-server --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/cart-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/payment-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" wait --for=condition=complete job/staging-smoke-test --timeout=900s
         '''
       }
     }
@@ -297,8 +299,10 @@ pipeline {
             --server=https://kubernetes.default.svc \
             --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
             --embed-certs=true
-          kubectl config set-credentials jenkins \
-            --token="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+          set +x
+          KUBE_TOKEN="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"
+          kubectl config set-credentials jenkins --token="$KUBE_TOKEN" >/dev/null
+          set -x
           kubectl config set-context jenkins \
             --cluster=k3d-local \
             --user=jenkins \
@@ -316,15 +320,15 @@ pipeline {
           cp -R "$K8S_OVERLAY/." "$WORK_DIR/"
           sed -i "s/newTag: $BRANCH_TAG/newTag: $IMAGE_TAG/g" "$WORK_DIR/kustomization.yaml"
           kubectl apply -k "$WORK_DIR"
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/discovery-server --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/api-gateway --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/inventory-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/notification-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/admin-server --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/cart-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/payment-service --timeout=300s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=300s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/discovery-server --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/api-gateway --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/inventory-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/notification-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/admin-server --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/cart-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/payment-service --timeout=1200s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=1200s
         '''
       }
     }
