@@ -18,6 +18,24 @@ resources:
   - monitoring/grafana.yaml
   - monitoring/alertmanager.yaml
   - monitoring/alertmanager-slack-secret.yaml
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/progressDeadlineSeconds
+        value: 1800
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Rollout
+    patch: |-
+      - op: add
+        path: /spec/progressDeadlineSeconds
+        value: 1800
+      - op: add
+        path: /spec/progressDeadlineAbort
+        value: false
 images:
   - name: kaingyn615/product-service
     newName: hiunehihi/product-service
