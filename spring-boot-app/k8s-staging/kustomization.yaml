@@ -9,7 +9,6 @@ resources:
   - ecommerce-expansion.yaml
   - services.yaml
   - frontend.yaml
-  - smoke-test.yaml
   - hpa.yaml
   - ingress/ingress.yaml
   - monitoring/namespace.yaml

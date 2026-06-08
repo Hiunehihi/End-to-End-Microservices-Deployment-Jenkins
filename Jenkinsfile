@@ -281,6 +281,8 @@ pipeline {
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/cart-service --timeout=1800s
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/payment-service --timeout=1800s
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=1800s
+          kubectl -n "$K8S_NAMESPACE" delete job staging-smoke-test --ignore-not-found=true
+          kubectl apply -f "$WORK_DIR/smoke-test.yaml"
           kubectl -n "$K8S_NAMESPACE" wait --for=condition=complete job/staging-smoke-test --timeout=900s
         '''
       }
